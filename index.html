@@ -853,36 +853,207 @@ const fwX=fwC.getContext('2d');
 let fwParts=[];
 let fwAnim=null;
 
-function firework(cx,cy){
-  const type=pick(['burst','ring','heart','willow','star']);
-  const pal=pick([
-    ['#6de8a8','#a8f0c8','#d4f8e8'],
-    ['#a8c8e8','#c8e0f8','#e8f4ff'],
-    ['#e8c870','#f8e090','#fff8cc'],
-    ['#b8a8e8','#d0c8f8','#ece8ff'],
-    ['#e8a8b8','#f8c8d8','#ffe8f0'],
-    ['#6de8a8','#a8c8e8','#e8c870'],
-    ['#ffffff','#e8f4ff','#f0fff8'],
+function firework(cx, cy) {
+  // 随机选择烟花类型
+  const type = pick(['burst', 'ring', 'heart', 'willow', 'star', 'peony', 'chrysanthemum']);
+  
+  // 更丰富的颜色调色板
+  const pal = pick([
+    ['#6de8a8', '#a8f0c8', '#d4f8e8', '#ffffff'], // 翠绿
+    ['#a8c8e8', '#c8e0f8', '#e8f4ff', '#ffffff'], // 天空蓝
+    ['#e8c870', '#f8e090', '#fff8cc', '#ffffff'], // 金色
+    ['#b8a8e8', '#d0c8f8', '#ece8ff', '#ffffff'], // 紫色
+    ['#e8a8b8', '#f8c8d8', '#ffe8f0', '#ffffff'], // 粉色
+    ['#ffb3b3', '#ffd6d6', '#ffe6e6', '#ffffff'], // 珊瑚
+    ['#c0e8d0', '#d8f0e0', '#ecf8f0', '#ffffff'], // 薄荷
+    ['#f0c0a8', '#f8d8c0', '#ffe8dc', '#ffffff'], // 暖橙
+    ['#6de8a8', '#a8c8e8', '#e8c870', '#ffb3b3'], // 彩虹混合
   ]);
-  const n=rndInt(40,58);
-  const spd=rand(4.5,8);
-  for(let i=0;i<n;i++){
-    let vx,vy;
-    const clr=pick(pal);
-    const life=rand(65,100);
-    let shape='circle';
-    const sz=rand(3,6);
-    if(type==='burst'){const a=rand(0,Math.PI*2),s=rand(0.5,1)*spd;vx=Math.cos(a)*s;vy=Math.sin(a)*s;}
-    else if(type==='ring'){const a=(i/n)*Math.PI*2,s=rand(0.9,1.1)*spd;vx=Math.cos(a)*s;vy=Math.sin(a)*s;}
-    else if(type==='heart'){const t=(i/n)*Math.PI*2;vx=16*Math.pow(Math.sin(t),3)*0.1*spd;vy=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*0.1*spd;}
-    else if(type==='willow'){const a=rand(-Math.PI/2-0.7,-Math.PI/2+0.7),s=rand(0.6,1.4)*spd;vx=Math.cos(a)*s;vy=Math.sin(a)*s;shape='trail';}
-    else{const a=(i/n)*Math.PI*2,s=(i%4===0?1.4:0.8)*spd;vx=Math.cos(a)*s;vy=Math.sin(a)*s;}
-    fwParts.push({x:cx,y:cy,vx,vy,clr,sz,life,ml:life,shape,g:rand(0.06,0.14),tr:shape==='trail'?[]:null});
+  
+  // 增加粒子数量，让烟花更密集
+  const n = rndInt(70, 100);
+  
+  // 降低初始速度，让烟花扩散更慢
+  const spd = rand(2.0, 4.5);
+  
+  // 随机重力（让烟花有不同下落速度）
+  const gravity = rand(0.02, 0.06);
+  
+  for (let i = 0; i < n; i++) {
+    let vx, vy;
+    const clr = pick(pal);
+    // 延长生命周期，让烟花持续更久
+    const life = rand(100, 160);
+    let shape = 'circle';
+    // 增大粒子尺寸
+    const sz = rand(4, 9);
+    
+    // 根据不同烟花类型计算初始速度
+    if (type === 'burst' || type === 'peony') {
+      const a = rand(0, Math.PI * 2);
+      const s = rand(0.6, 1.2) * spd;
+      vx = Math.cos(a) * s;
+      vy = Math.sin(a) * s;
+    } 
+    else if (type === 'ring' || type === 'chrysanthemum') {
+      const a = (i / n) * Math.PI * 2;
+      const s = rand(0.9, 1.2) * spd;
+      vx = Math.cos(a) * s;
+      vy = Math.sin(a) * s;
+    } 
+    else if (type === 'heart') {
+      const t = (i / n) * Math.PI * 2;
+      // 放大心形效果
+      vx = 16 * Math.pow(Math.sin(t), 3) * 0.15 * spd;
+      vy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * 0.15 * spd;
+    } 
+    else if (type === 'willow') {
+      const a = rand(-Math.PI / 2 - 0.5, -Math.PI / 2 + 0.5);
+      const s = rand(0.8, 1.6) * spd * 0.7;
+      vx = Math.cos(a) * s;
+      vy = Math.sin(a) * s;
+      shape = 'trail';
+    } 
+    else { // star 和其他类型
+      const a = (i / n) * Math.PI * 2;
+      const s = (i % 5 === 0 ? 1.6 : 0.9) * spd;
+      vx = Math.cos(a) * s;
+      vy = Math.sin(a) * s;
+    }
+    
+    // 添加粒子，使用统一的gravity让烟花缓缓下落
+    fwParts.push({
+      x: cx, 
+      y: cy, 
+      vx: vx * 1.2,        // 稍微增大扩散范围
+      vy: vy * 1.2,
+      clr, 
+      sz: sz * 1.2,        // 增大粒子尺寸
+      life, 
+      ml: life,
+      shape, 
+      g: gravity,          // 使用统一重力
+      tr: shape === 'trail' ? [] : null,
+      // 添加随机旋转效果（对某些粒子）
+      rot: rand(0, Math.PI * 2),
+      hasSpark: Math.random() > 0.7  // 部分粒子有额外的火星
+    });
+    
+    // 为部分粒子添加额外的火星（二次爆炸效果）
+    if (i % 3 === 0 && Math.random() > 0.5) {
+      setTimeout(() => {
+        for (let j = 0; j < 5; j++) {
+          const a2 = rand(0, Math.PI * 2);
+          const s2 = rand(0.5, 1.5);
+          fwParts.push({
+            x: cx + rand(-20, 20),
+            y: cy + rand(-20, 20),
+            vx: Math.cos(a2) * s2 * 1.5,
+            vy: Math.sin(a2) * s2 * 1.5 - 0.5,
+            clr: pick(['#fff9e6', '#ffeec2', '#ffd966', '#ffffff']),
+            sz: rand(3, 6),
+            life: rand(30, 50),
+            ml: rand(30, 50),
+            shape: 'circle',
+            g: gravity * 0.8,
+            tr: null
+          });
+        }
+      }, 80);
+    }
   }
-  if(!fwAnim)fwLoop();
+  
+  // 添加中心爆闪效果
+  setTimeout(() => {
+    for (let k = 0; k < 8; k++) {
+      fwParts.push({
+        x: cx + rand(-8, 8),
+        y: cy + rand(-8, 8),
+        vx: rand(-0.8, 0.8),
+        vy: rand(-0.8, 0.8),
+        clr: '#ffffff',
+        sz: rand(6, 10),
+        life: rand(15, 25),
+        ml: rand(15, 25),
+        shape: 'circle',
+        g: gravity * 0.5,
+        tr: null
+      });
+    }
+  }, 30);
+  
+  if (!fwAnim) fwLoop();
 }
 
-function fwLoop(){
+function fwLoop() {
+  fwX.clearRect(0, 0, fwC.width, fwC.height);
+  
+  fwParts = fwParts.filter(p => {
+    p.life--;
+    if (p.life <= 0) return false;
+    
+    // 减慢衰减速度，让粒子飘得更远
+    p.vx *= 0.985;
+    p.vy *= 0.985;
+    
+    // 应用重力，让粒子缓缓落下
+    p.vy += p.g;
+    
+    p.x += p.vx;
+    p.y += p.vy;
+    
+    // 根据生命计算透明度和大小
+    const lifeRatio = p.life / p.ml;
+    const a = Math.pow(lifeRatio, 1.3);
+    const sz = p.sz * (0.3 + 0.7 * lifeRatio);
+    
+    if (p.tr !== null) {
+      // 柳树型烟花的尾迹
+      p.tr.push({ x: p.x, y: p.y });
+      if (p.tr.length > 12) p.tr.shift();
+      
+      fwX.save();
+      p.tr.forEach((pt, idx) => {
+        const trailAlpha = a * (idx / p.tr.length) * 0.8;
+        fwX.globalAlpha = trailAlpha;
+        fwX.fillStyle = p.clr;
+        fwX.beginPath();
+        fwX.arc(pt.x, pt.y, sz * 0.5, 0, Math.PI * 2);
+        fwX.fill();
+      });
+      fwX.restore();
+    } else {
+      // 普通粒子绘制
+      fwX.save();
+      fwX.globalAlpha = a;
+      
+      // 绘制粒子本体
+      fwX.fillStyle = p.clr;
+      fwX.beginPath();
+      fwX.arc(p.x, p.y, sz, 0, Math.PI * 2);
+      fwX.fill();
+      
+      // 如果有火星效果，添加光晕
+      if (p.hasSpark && lifeRatio > 0.5) {
+        fwX.globalAlpha = a * 0.4;
+        fwX.fillStyle = '#ffffff';
+        fwX.beginPath();
+        fwX.arc(p.x - p.vx * 0.5, p.y - p.vy * 0.5, sz * 0.8, 0, Math.PI * 2);
+        fwX.fill();
+      }
+      
+      fwX.restore();
+    }
+    return true;
+  });
+  
+  if (fwParts.length) {
+    fwAnim = requestAnimationFrame(fwLoop);
+  } else {
+    fwAnim = null;
+    fwX.clearRect(0, 0, fwC.width, fwC.height);
+  }
+}
   fwX.clearRect(0,0,fwC.width,fwC.height);
   fwParts=fwParts.filter(p=>{
     p.life--;if(p.life<=0)return false;
